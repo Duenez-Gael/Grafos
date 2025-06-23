@@ -1,0 +1,100 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+from itertools import permutations
+
+
+class Grafo:
+    def __init__(self):
+        self.grafo = nx.Graph()
+
+    def agregar_arista(self, nodo1, nodo2, peso):
+        self.grafo.add_edge(nodo1, nodo2, weight=peso)
+
+    def mostrar_grafo(self):
+        pos = nx.spring_layout(self.grafo)
+        nx.draw(self.grafo, pos, with_labels=True, node_color='skyblue',
+                node_size=2000, font_size=15, font_weight='bold')
+
+        etiquetas = nx.get_edge_attributes(self.grafo, 'weight')
+        nx.draw_networkx_edge_labels(self.grafo, pos, edge_labels=etiquetas)
+        plt.show()
+
+    def obtener_nodos(self):
+        return list(self.grafo.nodes)
+
+    def obtener_peso(self, nodo1, nodo2):
+        return self.grafo[nodo1][nodo2]['weight'] if self.grafo.has_edge(nodo1, nodo2) else float('inf')
+
+
+class Tsp:
+    def __init__(self, grafo: Grafo):
+        self.grafo = grafo
+
+    def calcular_ruta_optima(self, inicio):
+        nodos = self.grafo.obtener_nodos()
+        if inicio not in nodos:
+            raise ValueError("El nodo inicial no está en el grafo.")
+
+        nodos.remove(inicio)
+        mejor_ruta = None
+        menor_peso = float('inf')
+
+        for perm in permutations(nodos):
+            ruta = [inicio] + list(perm) + [inicio]
+            peso_total = 0
+            valido = True
+
+            for i in range(len(ruta) - 1):
+                peso = self.grafo.obtener_peso(ruta[i], ruta[i + 1])
+                if peso == float('inf'):
+                    valido = False
+                    break
+                peso_total += peso
+
+            if valido and peso_total < menor_peso:
+                mejor_ruta = ruta
+                menor_peso = peso_total
+
+        return mejor_ruta, menor_peso
+
+
+if __name__ == "__main__":
+    g = Grafo()
+
+    print("\t\t\tMapa de Tiendas")
+
+    nodo_inicial = input("\nIngresa el nodo inicial: ")
+
+    print("\nIngresa las aristas del grafo. (Para terminar, escribe 'fin')")
+
+    while True:
+        entrada = input("Agregar arista (nodo1 nodo2 peso): ")
+        if entrada.lower() == "fin":
+            break
+        partes = entrada.split()
+        if len(partes) != 3:
+            print("Formato inválido. Usa: nodo1 nodo2 peso")
+            continue
+        nodo1, nodo2, peso = partes
+        try:
+            peso = int(peso)
+            g.agregar_arista(nodo1, nodo2, peso)
+        except ValueError:
+            print("El peso debe ser un número entero.")
+
+    print("\n\t\t\tRuta de tiendas")
+    g.mostrar_grafo()
+
+    viajante = Tsp(g)
+
+    # Verificamos que el nodo inicial esté presente
+    if nodo_inicial not in g.obtener_nodos():
+        print(f"\nEl nodo inicial '{nodo_inicial}' no existe en el grafo. No se puede calcular la ruta.")
+    else:
+        ruta, d = viajante.calcular_ruta_optima(nodo_inicial)
+
+        if ruta:
+            print(f"\nRuta más corta desde '{nodo_inicial}': {' -> '.join(ruta)}")
+            print(f"Distancia total del recorrido: {d} km")
+        else:
+            print("No se encontró una ruta válida que pase por todos los nodos.")

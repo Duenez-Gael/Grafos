@@ -1,8 +1,35 @@
+# ############################################################################
+# **    Proyecto       : Proyecto con Tk de la Presentación Grafos
+# **    Plataforma     : Python
+# **    Herramienta    : Visual Studio Code
+# **    Compilador     : IDLE Python
+# **    Fecha/Hora     : 23-06-2025, 16:00 pm
+# **    Descripción    : Proyecto de ejemplo de nuestra presentación de grafos con la utilizacón con interfaz grafica 
+#                        mediante Tkinter. Muestra la ruta mas rapida entre todos los nodos que el usuario le ingrese. 
+#
+# **   By             : Dueñez Mejia Angel Gael y Vargas Reyes Frank Anthony
+# **   Grupo          : 2CV13
+# **   Materia        : Programación avanzada
+##############################################################################
+
+
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# :                    Importación de Módulos y Bibliotecas                    :
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+import tkinter as tk
+from tkinter import messagebox
 import networkx as nx
 import matplotlib.pyplot as plt
 from itertools import permutations
 
 
+
+# ==============================================================================
+# ||                                                                           ||
+# ||                    P R O G R A M A  G E N E R A L                         ||
+# ||                                                                           ||
+# ==============================================================================
 class Grafo:
     def __init__(self):
         self.grafo = nx.Graph()
@@ -58,43 +85,90 @@ class Tsp:
         return mejor_ruta, menor_peso
 
 
-if __name__ == "__main__":
-    g = Grafo()
+class RutaTiendas:
+    def __init__(self):
+        self.g = Grafo()
+        self.nodo_inicial = ""
 
-    print("\t\t\tMapa de Tiendas")
+        self.ventana = tk.Tk()
+        self.ventana.title("Ruta de tiendas")
+        self.ventana.geometry("460x400")
 
-    nodo_inicial = input("\nIngresa el nodo inicial: ")
+        self.etiqueta_nodo_inicial = tk.Label(self.ventana, text="Ingresa el nodo inicial:", font=("Arial", 10))
+        self.entrada_nodo_inicial = tk.Entry(self.ventana, width=30)
 
-    print("\nIngresa las aristas del grafo. (Para terminar, escribe 'fin')")
+        self.etiqueta_arista = tk.Label(self.ventana, text="Agregar arista (nodo1 nodo2 peso):", font=("Arial", 10))
+        self.entrada_arista = tk.Entry(self.ventana, width=30)
 
-    while True:
-        entrada = input("Agregar arista (nodo1 nodo2 peso): ")
-        if entrada.lower() == "fin":
-            break
+        self.boton_guardar_nodo = tk.Button(self.ventana, text="Guardar nodo inicial", command=self.guardar_nodo_inicial)
+        self.boton_agregar_arista = tk.Button(self.ventana, text="Agregar arista", command=self.agregar_arista)
+
+        self.etiqueta_resultado = tk.Label(self.ventana, text="", font=("Arial", 10), wraplength=350)
+
+        self.boton_calcular_ruta = tk.Button(self.ventana, text="Calcular ruta óptima", command=self.calcular_ruta)
+        self.boton_mostrar_grafo = tk.Button(self.ventana, text="Mostrar grafo", command=self.g.mostrar_grafo)
+
+        self.etiqueta_nodo_inicial.pack(pady=5)
+        self.entrada_nodo_inicial.pack(pady=5)
+        self.boton_guardar_nodo.pack(pady=5)
+        self.etiqueta_arista.pack(pady=5)
+        self.entrada_arista.pack(pady=5)
+        self.boton_agregar_arista.pack(pady=5)
+        self.boton_calcular_ruta.pack(pady=10)
+        self.boton_mostrar_grafo.pack(pady=5)
+        self.etiqueta_resultado.pack(pady=10)
+
+        self.ventana.mainloop()
+
+    def guardar_nodo_inicial(self):
+        valor = self.entrada_nodo_inicial.get()
+        if valor:
+            self.nodo_inicial = valor
+            self.entrada_nodo_inicial.delete(0, tk.END)
+            messagebox.showinfo("Nodo inicial", f"Nodo inicial '{valor}' guardado.")
+        else:
+            messagebox.showwarning("Advertencia", "Debes ingresar un nodo inicial.")
+
+    def agregar_arista(self):
+        entrada = self.entrada_arista.get()
         partes = entrada.split()
         if len(partes) != 3:
-            print("Formato inválido. Usa: nodo1 nodo2 peso")
-            continue
+            messagebox.showwarning("Advertencia", "Formato inválido. Usa: nodo1 nodo2 peso")
+            return
         nodo1, nodo2, peso = partes
         try:
             peso = int(peso)
-            g.agregar_arista(nodo1, nodo2, peso)
+            self.g.agregar_arista(nodo1, nodo2, peso)
+            messagebox.showinfo("Arista agregada", f"Se agregó la arista {nodo1} <-> {nodo2} con peso {peso}")
+            self.entrada_arista.delete(0, tk.END)
         except ValueError:
-            print("El peso debe ser un número entero.")
+            messagebox.showerror("Error", "El peso debe ser un número entero.")
 
-    print("\n\t\t\tRuta de tiendas")
-    g.mostrar_grafo()
+    def calcular_ruta(self):
+        if not self.nodo_inicial:
+            messagebox.showwarning("Advertencia", "Primero debes ingresar el nodo inicial.")
+            return
 
-    viajante = Tsp(g)
+        if self.nodo_inicial not in self.g.obtener_nodos():
+            messagebox.showerror("Error", f"El nodo inicial '{self.nodo_inicial}' no existe en el grafo.")
+            return
 
-    # Verificamos que el nodo inicial esté presente
-    if nodo_inicial not in g.obtener_nodos():
-        print(f"\nEl nodo inicial '{nodo_inicial}' no existe en el grafo. No se puede calcular la ruta.")
-    else:
-        ruta, d = viajante.calcular_ruta_optima(nodo_inicial)
+        viajante = Tsp(self.g)
+        ruta, d = viajante.calcular_ruta_optima(self.nodo_inicial)
 
         if ruta:
-            print(f"\nRuta más corta desde '{nodo_inicial}': {' -> '.join(ruta)}")
-            print(f"Distancia total del recorrido: {d} km")
+            texto = f"Ruta más corta desde '{self.nodo_inicial}': {' -> '.join(ruta)}\nDistancia total del recorrido: {d} km"
         else:
-            print("No se encontró una ruta válida que pase por todos los nodos.")
+            texto = "No se encontró una ruta válida que pase por todos los nodos."
+
+        self.etiqueta_resultado.config(text=texto)
+
+
+
+# ==============================================================================
+# ||                                                                           ||
+# ||        P R O G R A M A / F U N C I O N    P R I N C I P A L               ||
+# ||                                                                           ||
+# ==============================================================================
+if __name__ == "__main__":
+    RutaTiendas()
